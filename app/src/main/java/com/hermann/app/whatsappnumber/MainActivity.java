@@ -280,7 +280,7 @@ public class MainActivity extends AppCompatActivity {
             progress1=new ProgressDialog(MainActivity.this);
             progress1.setMessage("Enregistrement des contacts...");
             progress1.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-            progress1.setIndeterminate(true);
+            progress1.setCancelable(false);
             progress1.setProgress(0);
             progress1.setMax(noc);
             progress1.show();
@@ -337,7 +337,8 @@ public class MainActivity extends AppCompatActivity {
 
                         jumpTime ++;
                         progress1.setProgress(jumpTime);
-                        publishProgress(jumpTime);
+//                        publishProgress(jumpTime);
+                        publishProgress((int) ((jumpTime / (float) noc) * 100));
                     } catch (Exception e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
@@ -368,7 +369,7 @@ public class MainActivity extends AppCompatActivity {
             progress2=new ProgressDialog(MainActivity.this);
             progress2.setMessage("Chargement des numéros Whatsapp...");
             progress2.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-            progress2.setIndeterminate(true);
+            progress2.setCancelable(false);
             progress2.setProgress(0);
             progress2.show();
 
@@ -437,7 +438,8 @@ public class MainActivity extends AppCompatActivity {
             progress3=new ProgressDialog(MainActivity.this);
             progress3.setMessage("Suppression des numéros...");
             progress3.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-            progress3.setIndeterminate(true);
+            progress3.setCancelable(false);
+            progress3.setMax(noc);
             progress3.setProgress(0);
             progress3.show();
 
@@ -466,7 +468,8 @@ public class MainActivity extends AppCompatActivity {
                                 }
                                 jumpTime ++;
                                 progress3.setProgress(jumpTime);
-                                publishProgress(jumpTime);
+                               // publishProgress(jumpTime);
+                                publishProgress((int) ((jumpTime / (float) noc) * 100));
                             } while (cur.moveToNext());
                         }
 
