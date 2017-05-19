@@ -144,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
                 deleteContact(MainActivity.this);
 
 
-                tv.append("\nLes numéros de téléphone enregistrés ont été supprimés !!");
+                tv.append("\n\nLes numéros de téléphone enregistrés ont été supprimés !!");
 
             }
         });
@@ -177,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
                         filename = path.substring(path.lastIndexOf(File.separator));
                         // Initiate the upload
                         tv.append("Chemin du fichier : " + path);
-                        tv.append("\nNom du fichier : " + filename);
+                        tv.append("\n\nNom du fichier : " + filename);
 
                         String csv=".csv";
                         if(filename.lastIndexOf(".") > 0) {
@@ -204,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
                         Long tsLong = System.currentTimeMillis()/1000;
                         tmp = tsLong.toString();
 
-                        tv.append("\nFichier correctement enregistré !!");
+                        tv.append("\n\nFichier correctement enregistré !!");
                     }catch (Exception e){
                         e.printStackTrace();
                     }
@@ -258,11 +258,12 @@ public class MainActivity extends AppCompatActivity {
                                 whatsAppContactCursor.moveToFirst();
                                 String name = whatsAppContactCursor.getString(whatsAppContactCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
                                 String number = whatsAppContactCursor.getString(whatsAppContactCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-
+                                if (name.contains(RACINE)) {
+                                    //Add Number to ArrayList
+                                    myWhatsappContacts.add(number+" "+ ";"+" "+name);
+                                }
                                 whatsAppContactCursor.close();
 
-                                //Add Number to ArrayList
-                                myWhatsappContacts.add(number+" "+ ";"+" "+name);
                             }
                         }
                     } while (contactCursor.moveToNext());
@@ -278,7 +279,7 @@ public class MainActivity extends AppCompatActivity {
         protected void onPreExecute() {
             super.onPreExecute();
             progress1=new ProgressDialog(MainActivity.this);
-            progress1.setMessage("Enregistrement des contacts...");
+            progress1.setMessage("Enregistrement des contacts dans le téléphone...");
             progress1.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
             progress1.setCancelable(false);
             progress1.setProgress(0);
@@ -357,7 +358,7 @@ public class MainActivity extends AppCompatActivity {
             if(progress1 != null)
             progress1.dismiss();
 
-            tv.append("\nLes numéros de téléphone sont enregistrés dans le téléphone !!");
+            tv.append("\n\nLes numéros de téléphone sont enregistrés dans les contacts du téléphone !!");
         }
     }
 
@@ -425,8 +426,8 @@ public class MainActivity extends AppCompatActivity {
                 progress2.dismiss();
 
             //tv.append("\n\nFile written to "+file);
-            tv.append("\n\nFile written to Downloads File");
-            Toast.makeText(MainActivity.this, "Les numéros ont été insérés dans le fichier !!", Toast.LENGTH_LONG).show();
+            tv.append("\n\nLe fichier de sortie se trouve dans le dossier Downloads du téléphone");
+            Toast.makeText(MainActivity.this, "Les numéros ont été insérés dans le fichier de sortie!!", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -490,9 +491,51 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onResume(){
+
+        super.onResume();
+        if(progress1 != null && progress1.isShowing())
+            progress1.show();
+
+        if(progress2 != null && progress2.isShowing())
+            progress2.show();
+
+        if(progress3 != null && progress3.isShowing())
+            progress3.show();
+    }
+
+    @Override
     public void onPause(){
 
         super.onPause();
+        if(progress1 != null && progress1.isShowing())
+            progress1.show();
+
+        if(progress2 != null && progress2.isShowing())
+            progress2.show();
+
+        if(progress3 != null && progress3.isShowing())
+            progress3.show();
+    }
+
+    @Override
+    public void onStop(){
+
+        super.onStop();
+        if(progress1 != null)
+            progress1.hide();
+
+        if(progress2 != null)
+            progress2.hide();
+
+        if(progress3 != null)
+            progress3.hide();
+    }
+
+    @Override
+    public void onDestroy(){
+
+        super.onDestroy();
         if(progress1 != null)
             progress1.dismiss();
 
