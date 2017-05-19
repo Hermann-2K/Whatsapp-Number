@@ -3,4 +3,43 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+
+    <color name="blue_kerawa">#1a1c97</color>
+    <color name="oldblue_kerawa">#2196f3</color>
+    <!-- App Main Palette -->
+    <color name="textPrimary">@color/text_white_text_icons_100</color>
+
+    <!-- Text -->
+    <!-- Text -->
+    <color name="text_black_100">#000000</color>
+
+    <color name="text_white_text_icons_100">#FFFFFF</color>
+
+    <!-- NavigationDrawer -->
+    <color name="navigation_drawer_background">#ffffffff</color>
+
+    <!-- Green -->
+
+    <!-- Grey -->
+    <color name="grey_200">#eeeeee</color>
+    <color name="grey">#696969</color>
+
+    <!-- Blue -->
+    <color name="blue_500">#2196f3</color>
+
+    <!-- Amber -->
+    <color name="amber_500">#ffc107</color>
+
+    <!-- Black and White -->
+    <color name="white">#FFFFFF</color>
+
+    <!--<color name="kerawa_red">#d50000</color>
+    -->
+    <color name="kerawa_grey">#7d7d7d</color>
+    <color name="kerawa_red">#e23827</color>
+    <color name="kerawa_blue">#1a1c97</color>
+    <color name="kerawa_green">#00784b</color>
+    <color name="kerawa_yellow">#ffb200</color>
+    <color name="kerawa_black">#333333</color>
+
 </resources>

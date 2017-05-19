@@ -1,5 +1,6 @@
 package com.hermann.app.whatsappnumber;
 
+import android.app.ProgressDialog;
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
 import android.content.ContentResolver;
@@ -7,6 +8,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
@@ -27,7 +29,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -45,7 +46,6 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
-    ListView listView ;
     ArrayList<String> StoreContacts ;
     ArrayList<String> myWhatsappContacts ;
     ArrayAdapter<String> arrayAdapter ;
@@ -62,6 +62,13 @@ public class MainActivity extends AppCompatActivity {
     private static final int FILE_SELECT_CODE = 0;
     String path,filename;
     int rawContactInsertIndex;
+    int noc = 0;
+    String tmp;
+    private ProgressDialog progress1;
+    private ProgressDialog progress2;
+    private ProgressDialog progress3;
+
+    static String RACINE = "ZZZZZ-";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,8 +76,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        listView = (ListView)findViewById(R.id.listview1);
 
         button = (Button)findViewById(R.id.button3);
         chooseFile = (Button) findViewById(R.id.button1);
@@ -113,52 +118,8 @@ public class MainActivity extends AppCompatActivity {
                 if(filename.lastIndexOf(".") > 0){
                     String ext = filename.substring(filename.lastIndexOf("."));
                     if(csv.equalsIgnoreCase(ext)){
-                        try{
-                            FileInputStream fis = new FileInputStream(new File(path));
-                            InputStreamReader isr = new InputStreamReader(fis,"UTF-8");
-                            BufferedReader bufferedReader = new BufferedReader(isr);
-                            String line;
-                            while ((line = bufferedReader.readLine()) != null) {
-                                String phone = line.split(";")[0];
-                                String name = line.split(";")[1];
-                                ArrayList < ContentProviderOperation > ops = new ArrayList < ContentProviderOperation > ();
-
-                                rawContactInsertIndex = ops.size();
-
-
-
-                                try{
-
-                                    ops.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
-                                            .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
-                                            .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null).build());
-                                    ops.add(ContentProviderOperation
-                                            .newInsert(ContactsContract.Data.CONTENT_URI)
-                                            .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID,rawContactInsertIndex)
-                                            .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
-                                            .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, name) // Name of the person
-                                            .build());
-                                    ops.add(ContentProviderOperation
-                                            .newInsert(ContactsContract.Data.CONTENT_URI)
-                                            .withValueBackReference(
-                                                    ContactsContract.Data.RAW_CONTACT_ID,   rawContactInsertIndex)
-                                            .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
-                                            .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, phone) // Number of the person
-                                            .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE).build()); // Type of mobile number
-                                    ContentProviderResult[] res = getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
-
-                                }catch (Exception e){
-                                    Toast.makeText(MainActivity.this, "Exception : "+e.getMessage(), Toast.LENGTH_SHORT).show();
-                                }
-
-                            }
-                            fis.close();
-                            tv.append("\nLes numéros de téléphone sont enregistrés dans le téléphone !!");
-
-                        }catch (IOException e){
-                            Toast.makeText(MainActivity.this, "Exception : "+e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-
+                        ChargementContact cc = new ChargementContact();
+                        cc.execute();
                     } else{
                         // IF EXTENSION IS NOT ACCEPT
                         Toast.makeText(MainActivity.this, "Extension du fichier non valide", Toast.LENGTH_SHORT).show();
@@ -175,32 +136,14 @@ public class MainActivity extends AppCompatActivity {
                 //GetContactsIntoArrayList();
                 checkExternalMedia();
 
-                    GetWhatsAppContacts();
-
-                arrayAdapter = new ArrayAdapter<String>(
-                        MainActivity.this,
-                        R.layout.contact_items_listview,
-                        R.id.textView, myWhatsappContacts
-                );
-
-                listView.setAdapter(arrayAdapter);
+                GetWhatsAppContacts();
 
                 writeToSDFile();
 
-                try{
-                    FileInputStream fis = new FileInputStream(new File(path));
-                    InputStreamReader isr = new InputStreamReader(fis,"UTF-8");
-                    BufferedReader bufferedReader = new BufferedReader(isr);
-                    String line;
-                    while ((line = bufferedReader.readLine()) != null) {
-                        String phone = line.split(";")[0];
-                        String name = line.split(";")[1];
-                        deleteContact(MainActivity.this,phone,name);
-                    }
-                    fis.close();
-                }catch (Exception e){
-                    Toast.makeText(MainActivity.this, "Exception : "+e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
+
+                deleteContact(MainActivity.this);
+
+
                 tv.append("\nLes numéros de téléphone enregistrés ont été supprimés !!");
 
             }
@@ -208,28 +151,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public static boolean deleteContact(Context ctx, String phone, String name) {
-        Uri contactUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phone));
-        Cursor cur = ctx.getContentResolver().query(contactUri, null, null, null, null);
-        try {
-            if (cur.moveToFirst()) {
-                do {
-                    if (cur.getString(cur.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME)).equalsIgnoreCase(name)) {
-                        String lookupKey = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
-                        Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_LOOKUP_URI, lookupKey);
-                        ctx.getContentResolver().delete(uri, null, null);
-                        return true;
-                    }
-
-                } while (cur.moveToNext());
-            }
-
-        } catch (Exception e) {
-            System.out.println(e.getStackTrace());
-        } finally {
-            cur.close();
-        }
-        return false;
+    public void deleteContact(final Context ctx) {
+       // Uri contactUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phone));
+        DelContact dc = new DelContact();
+        dc.execute();
     }
 
     @Override
@@ -237,6 +162,7 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case FILE_SELECT_CODE:
                 if (resultCode == RESULT_OK) {
+                    noc = 0;
                     tv.setText("\n");
                     try{
                         // Get the Uri of the selected file
@@ -252,6 +178,33 @@ public class MainActivity extends AppCompatActivity {
                         // Initiate the upload
                         tv.append("Chemin du fichier : " + path);
                         tv.append("\nNom du fichier : " + filename);
+
+                        String csv=".csv";
+                        if(filename.lastIndexOf(".") > 0) {
+                            String ext = filename.substring(filename.lastIndexOf("."));
+                            if (csv.equalsIgnoreCase(ext)) {
+                                try {
+                                    FileInputStream fis = new FileInputStream(new File(path));
+                                    InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
+                                    BufferedReader bufferedReader = new BufferedReader(isr);
+                                    while (bufferedReader.readLine() != null) {
+                                        noc++;
+                                    }
+                                }catch (IOException e){
+                                    Toast.makeText(MainActivity.this, "Exception : "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+
+                            } else{
+                                // IF EXTENSION IS NOT ACCEPT
+                                Toast.makeText(MainActivity.this, "Extension du fichier non valide", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                        }
+
+                        Long tsLong = System.currentTimeMillis()/1000;
+                        tmp = tsLong.toString();
+
+                        tv.append("\nFichier correctement enregistré !!");
                     }catch (Exception e){
                         e.printStackTrace();
                     }
@@ -263,41 +216,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void writeToSDFile(){
-
-        // Find the root of the external storage.
-        // See http://developer.android.com/guide/topics/data/data-  storage.html#filesExternal
-
-        File root = android.os.Environment.getExternalStorageDirectory();
-        tv.append("\nExternal file system root: "+root);
-
-        // See http://stackoverflow.com/questions/3551821/android-write-to-sd-card-folder
-
-        File dir = new File (root.getAbsolutePath() + "/Download");
-        dir.mkdirs();
-        File file = new File(dir, "numbers.csv");
-
-        if (file.exists()) {
-            file.delete();
-        }
-
-        try {
-            FileOutputStream f = new FileOutputStream(file);
-            PrintWriter pw = new PrintWriter(f);
-            for(int i=0;i<myWhatsappContacts.size();i++){
-                pw.println(myWhatsappContacts.get(i));
-            }
-            pw.flush();
-            pw.close();
-            f.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            Log.i(TAG, "******* File not found. Did you" +
-                    " add a WRITE_EXTERNAL_STORAGE permission to the   manifest?");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        tv.append("\n\nFile written to "+file);
-        Toast.makeText(this, "Les numéros ont été insérés dans le fichier !!", Toast.LENGTH_LONG).show();
+        SDFile sdf = new SDFile();
+        sdf.execute();
     }
 
     public void GetWhatsAppContacts(){
@@ -336,14 +256,13 @@ public class MainActivity extends AppCompatActivity {
 
                             if (whatsAppContactCursor != null) {
                                 whatsAppContactCursor.moveToFirst();
-                                String id = whatsAppContactCursor.getString(whatsAppContactCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.CONTACT_ID));
                                 String name = whatsAppContactCursor.getString(whatsAppContactCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
                                 String number = whatsAppContactCursor.getString(whatsAppContactCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
 
                                 whatsAppContactCursor.close();
 
                                 //Add Number to ArrayList
-                                myWhatsappContacts.add(number+" "+ ";"+" "+name+" "+";"+" "+id);
+                                myWhatsappContacts.add(number+" "+ ";"+" "+name);
                             }
                         }
                     } while (contactCursor.moveToNext());
@@ -353,6 +272,234 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private class ChargementContact extends AsyncTask<Void, Integer, Void> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progress1=new ProgressDialog(MainActivity.this);
+            progress1.setMessage("Enregistrement des contacts...");
+            progress1.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            progress1.setIndeterminate(true);
+            progress1.setProgress(0);
+            progress1.setMax(noc);
+            progress1.show();
+
+        }
+
+        protected void onProgressUpdate(Integer... values){
+            super.onProgressUpdate();
+            // Mise à jour de la ProgressBar
+            progress1.setProgress(values[0]);
+        }
+
+        @Override
+        protected Void doInBackground(Void... arg0) {
+
+            int jumpTime = 0;
+            try{
+                FileInputStream fis = new FileInputStream(new File(path));
+                InputStreamReader isr = new InputStreamReader(fis,"UTF-8");
+                BufferedReader bufferedReader = new BufferedReader(isr);
+                String line;
+
+                while((line = bufferedReader.readLine()) != null) {
+                    try {
+                        String phone = line;
+                        String name = RACINE+tmp+"_"+(jumpTime+1);
+                        ArrayList < ContentProviderOperation > ops = new ArrayList < ContentProviderOperation > ();
+
+                        rawContactInsertIndex = ops.size();
+
+                        try{
+
+                            ops.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                                    .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
+                                    .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null).build());
+                            ops.add(ContentProviderOperation
+                                    .newInsert(ContactsContract.Data.CONTENT_URI)
+                                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID,rawContactInsertIndex)
+                                    .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+                                    .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, name) // Name of the person
+                                    .build());
+                            ops.add(ContentProviderOperation
+                                    .newInsert(ContactsContract.Data.CONTENT_URI)
+                                    .withValueBackReference(
+                                            ContactsContract.Data.RAW_CONTACT_ID,   rawContactInsertIndex)
+                                    .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
+                                    .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, phone) // Number of the person
+                                    .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE).build()); // Type of mobile number
+                            ContentProviderResult[] res = getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
+
+                        }catch (Exception e){
+                            Toast.makeText(MainActivity.this, "Exception : "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+
+                        jumpTime ++;
+                        progress1.setProgress(jumpTime);
+                        publishProgress(jumpTime);
+                    } catch (Exception e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                fis.close();
+            }catch (IOException e){
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            if(progress1 != null)
+            progress1.dismiss();
+
+            tv.append("\nLes numéros de téléphone sont enregistrés dans le téléphone !!");
+        }
+    }
+
+    private class SDFile extends AsyncTask<Void, Integer, Void> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progress2=new ProgressDialog(MainActivity.this);
+            progress2.setMessage("Chargement des numéros Whatsapp...");
+            progress2.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            progress2.setIndeterminate(true);
+            progress2.setProgress(0);
+            progress2.show();
+
+        }
+
+        protected void onProgressUpdate(Integer... values){
+            super.onProgressUpdate();
+            // Mise à jour de la ProgressBar
+            progress2.setProgress(values[0]);
+        }
+
+        @Override
+        protected Void doInBackground(Void... arg0) {
+            // Find the root of the external storage.
+            // See http://developer.android.com/guide/topics/data/data-  storage.html#filesExternal
+            File root = android.os.Environment.getExternalStorageDirectory();
+            //tv.append("\nExternal file system root: "+root);
+
+            // See http://stackoverflow.com/questions/3551821/android-write-to-sd-card-folder
+
+            File dir = new File (root.getAbsolutePath() + "/Download");
+            dir.mkdirs();
+            Long tsLong = System.currentTimeMillis()/1000;
+
+            final File file = new File(dir, "numbers-"+tsLong.toString()+".csv");
+
+            final int totalProgressTime = myWhatsappContacts.size();
+//            Toast.makeText(MainActivity.this, "Nombre de numéros Whatsapp : "+totalProgressTime, Toast.LENGTH_SHORT).show();
+            try{
+                final FileOutputStream f = new FileOutputStream(file);
+                final PrintWriter pw = new PrintWriter(f);
+
+                for(int i=0;i<totalProgressTime;i++) {
+                    pw.println(myWhatsappContacts.get(i));
+                    progress2.setProgress(i+1);
+                    publishProgress(i+1);
+                }
+                pw.flush();
+                pw.close();
+                f.close();
+            }catch (FileNotFoundException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            if(progress2 != null)
+                progress2.dismiss();
+
+            //tv.append("\n\nFile written to "+file);
+            tv.append("\n\nFile written to Downloads File");
+            Toast.makeText(MainActivity.this, "Les numéros ont été insérés dans le fichier !!", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private class DelContact extends AsyncTask<Void, Integer, Void> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progress3=new ProgressDialog(MainActivity.this);
+            progress3.setMessage("Suppression des numéros...");
+            progress3.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            progress3.setIndeterminate(true);
+            progress3.setProgress(0);
+            progress3.show();
+
+        }
+
+        protected void onProgressUpdate(Integer... values){
+            super.onProgressUpdate();
+            // Mise à jour de la ProgressBar
+            progress3.setProgress(values[0]);
+        }
+
+        @Override
+        protected Void doInBackground(Void... arg0) {
+
+            final Cursor cur = getApplicationContext().getContentResolver().query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
+
+                    int jumpTime = 0;
+
+                    try {
+                        if (cur.moveToFirst()) {
+                            do {
+                                if (cur.getString(cur.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME)).contains(RACINE)) {
+                                    String lookupKey = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
+                                    Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_LOOKUP_URI, lookupKey);
+                                    getApplicationContext().getContentResolver().delete(uri, null, null);
+                                }
+                                jumpTime ++;
+                                progress3.setProgress(jumpTime);
+                                publishProgress(jumpTime);
+                            } while (cur.moveToNext());
+                        }
+
+                    } catch (Exception e) {
+                        e.getStackTrace();
+                    } finally {
+                        cur.close();
+                    }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            if(progress3 != null)
+                progress3.dismiss();
+        }
+    }
+
+    @Override
+    public void onPause(){
+
+        super.onPause();
+        if(progress1 != null)
+            progress1.dismiss();
+
+        if(progress2 != null)
+            progress2.dismiss();
+
+        if(progress3 != null)
+            progress3.dismiss();
+    }
+
     public void EnableRuntimePermission(){
 
         if (ActivityCompat.shouldShowRequestPermissionRationale(
@@ -360,7 +507,7 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.READ_CONTACTS))
         {
 
-            Toast.makeText(MainActivity.this,"CONTACTS permission allows us to Access CONTACTS app", Toast.LENGTH_LONG).show();
+       //     Toast.makeText(MainActivity.this,"CONTACTS permission allows us to Access CONTACTS app", Toast.LENGTH_LONG).show();
 
         } else {
 
@@ -374,7 +521,7 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.WRITE_CONTACTS))
         {
 
-            Toast.makeText(MainActivity.this,"CONTACTS permission allows us to Write CONTACTS ", Toast.LENGTH_LONG).show();
+        //    Toast.makeText(MainActivity.this,"CONTACTS permission allows us to Write CONTACTS ", Toast.LENGTH_LONG).show();
 
         } else {
 
@@ -388,7 +535,7 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.WRITE_EXTERNAL_STORAGE))
         {
 
-            Toast.makeText(MainActivity.this,"Storage permission allows us to Write into External Storage app", Toast.LENGTH_LONG).show();
+        //    Toast.makeText(MainActivity.this,"Storage permission allows us to Write into External Storage app", Toast.LENGTH_LONG).show();
 
         } else {
 
@@ -402,7 +549,7 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.READ_EXTERNAL_STORAGE))
         {
 
-            Toast.makeText(MainActivity.this,"Storage permission allows us to Read into External Storage app", Toast.LENGTH_LONG).show();
+         //   Toast.makeText(MainActivity.this,"Storage permission allows us to Read into External Storage app", Toast.LENGTH_LONG).show();
 
         } else {
 
@@ -422,11 +569,11 @@ public class MainActivity extends AppCompatActivity {
 
                 if (PResult.length > 0 && PResult[0] == PackageManager.PERMISSION_GRANTED) {
 
-                    Toast.makeText(MainActivity.this,"Permission Granted, Now your application can access CONTACTS.", Toast.LENGTH_LONG).show();
+//                    Toast.makeText(MainActivity.this,"Permission Granted, Now your application can access CONTACTS.", Toast.LENGTH_LONG).show();
 
                 } else {
 
-                    Toast.makeText(MainActivity.this,"Permission Canceled, Now your application cannot access CONTACTS.", Toast.LENGTH_LONG).show();
+  //                  Toast.makeText(MainActivity.this,"Permission Canceled, Now your application cannot access CONTACTS.", Toast.LENGTH_LONG).show();
 
                 }
                 break;
@@ -434,11 +581,11 @@ public class MainActivity extends AppCompatActivity {
             case RequestPermissionCodeExternalStorage:
                 if (PResult.length > 0 && PResult[0] == PackageManager.PERMISSION_GRANTED) {
 
-                    Toast.makeText(MainActivity.this,"Permission Granted, Now your application can write into External Storage.", Toast.LENGTH_LONG).show();
+            //        Toast.makeText(MainActivity.this,"Permission Granted, Now your application can write into External Storage.", Toast.LENGTH_LONG).show();
 
                 } else {
 
-                    Toast.makeText(MainActivity.this,"Permission Canceled, Now your application cannot write into External Storage.", Toast.LENGTH_LONG).show();
+             //       Toast.makeText(MainActivity.this,"Permission Canceled, Now your application cannot write into External Storage.", Toast.LENGTH_LONG).show();
 
                 }
                 break;
@@ -446,11 +593,11 @@ public class MainActivity extends AppCompatActivity {
             case RequestPermissionCodeReadExternalStorage:
                 if (PResult.length > 0 && PResult[0] == PackageManager.PERMISSION_GRANTED) {
 
-                    Toast.makeText(MainActivity.this,"Permission Granted, Now your application can read into External Storage.", Toast.LENGTH_LONG).show();
+              //      Toast.makeText(MainActivity.this,"Permission Granted, Now your application can read into External Storage.", Toast.LENGTH_LONG).show();
 
                 } else {
 
-                    Toast.makeText(MainActivity.this,"Permission Canceled, Now your application cannot read into External Storage.", Toast.LENGTH_LONG).show();
+               //     Toast.makeText(MainActivity.this,"Permission Canceled, Now your application cannot read into External Storage.", Toast.LENGTH_LONG).show();
 
                 }
                 break;
@@ -458,11 +605,11 @@ public class MainActivity extends AppCompatActivity {
             case RequestPermissionCodeWriteContact:
                 if (PResult.length > 0 && PResult[0] == PackageManager.PERMISSION_GRANTED) {
 
-                    Toast.makeText(MainActivity.this,"Permission Granted, Now your application can write into your contacts.", Toast.LENGTH_LONG).show();
+              //      Toast.makeText(MainActivity.this,"Permission Granted, Now your application can write into your contacts.", Toast.LENGTH_LONG).show();
 
                 } else {
 
-                    Toast.makeText(MainActivity.this,"Permission Canceled, Now your application cannot write into your contacts.", Toast.LENGTH_LONG).show();
+               //     Toast.makeText(MainActivity.this,"Permission Canceled, Now your application cannot write into your contacts.", Toast.LENGTH_LONG).show();
 
                 }
                 break;
