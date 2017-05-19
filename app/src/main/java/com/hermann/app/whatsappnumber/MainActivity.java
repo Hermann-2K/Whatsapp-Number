@@ -243,16 +243,16 @@ public class MainActivity extends AppCompatActivity {
                         Uri uri = data.getData();
                         Log.d(TAG, "File Uri: " + uri.toString());
                         // Get the path
-                        path = FileUtils.getPath(this, uri);
+                        path = FileUtils.getPath(MainActivity.this, uri);
                         Log.d(TAG, "File Path: " + path);
                         // Get the file instance
                         // File file = new File(path);
                         // FILE NAME
-                        filename = path.substring(path.lastIndexOf("/"));
+                        filename = path.substring(path.lastIndexOf(File.separator));
                         // Initiate the upload
                         tv.append("Chemin du fichier : " + path);
                         tv.append("\nNom du fichier : " + filename);
-                    }catch (URISyntaxException e){
+                    }catch (Exception e){
                         e.printStackTrace();
                     }
 
