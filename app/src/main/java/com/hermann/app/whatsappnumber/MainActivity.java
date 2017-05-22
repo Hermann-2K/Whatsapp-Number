@@ -91,9 +91,16 @@ public class MainActivity extends AppCompatActivity {
         chooseFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.setType("*/*");
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+                // Use the GET_CONTENT intent from the utility class
+                Intent target = com.hermann.app.whatsappnumber.afilechooser.FileUtils.createGetContentIntent();
+                // Create the chooser Intent
+                Intent intent = Intent.createChooser(
+                        target, getString(R.string.chooser_title));
+
+//                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+//                intent.setType("*/*");
+//                intent.addCategory(Intent.CATEGORY_OPENABLE);
 
                 try {
                     startActivityForResult(
@@ -306,7 +313,7 @@ public class MainActivity extends AppCompatActivity {
                 while((line = bufferedReader.readLine()) != null) {
                     try {
                         String phone = line;
-                        String name = RACINE+tmp+"_"+(jumpTime+1);
+                        String name = RACINE+(jumpTime+1)+"-"+tmp;
                         ArrayList < ContentProviderOperation > ops = new ArrayList < ContentProviderOperation > ();
 
                         rawContactInsertIndex = ops.size();
