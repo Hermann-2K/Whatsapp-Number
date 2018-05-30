@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/content_main"
@@ -13,25 +13,53 @@
     tools:context="com.hermann.app.whatsappnumber.MainActivity"
     tools:showIn="@layout/activity_main">
 
-    <TextView
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/textview"
-        android:text="Texte de sauvegarde SD"
-        android:layout_marginBottom="10dp"/>
+        android:layout_height="match_parent">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/textview"
+            android:text="Texte de sauvegarde SD"
+            android:layout_marginBottom="10dp"/>
 
-    <ListView
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:layout_centerHorizontal="true"
-        android:id="@+id/listview1"
-        android:layout_below="@+id/button1" />
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/button1"
+            android:textColor="#fff"
+            android:background="@drawable/blue_button"
+            android:text="Click Here to choose file"
+            android:layout_below="@+id/textview"
+            android:layout_alignLeft="@+id/textview"
+            android:layout_alignStart="@+id/textview"
+            android:layout_marginTop="26dp" />
 
-    <Button
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/button1"
-        android:layout_below="@+id/textview"
-        android:text="Click Here to load Contacts" />
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/button2"
+            android:textColor="#fff"
+            android:background="@drawable/green_button"
+            android:text="Click Here to save file's contacts in phone"
+            android:layout_marginTop="46dp"
+            android:layout_below="@+id/button1"
+            android:layout_alignLeft="@+id/button1"
+            android:layout_alignStart="@+id/button1" />
 
-</RelativeLayout>
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/button3"
+            android:textColor="#fff"
+            android:background="@drawable/red_button"
+            android:text="Click Here to load Contacts"
+            android:layout_marginTop="56dp"
+            android:layout_below="@+id/button2"
+            android:layout_alignLeft="@+id/button2"
+            android:layout_alignStart="@+id/button2" />
+
+        </RelativeLayout>
+
+
+</ScrollView>
